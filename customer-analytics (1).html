@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Customer Intelligence Suite</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#08080f;--surface:#10101e;--surface2:#161628;--border:#1e1e35;
+    --teal:#4ECDC4;--yellow:#FFE66D;--red:#FF6B6B;--purple:#A855F7;--blue:#06B6D4;--orange:#F97316;
+    --text:#e8e8f0;--muted:#666;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:#0d0d18}
+  ::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:3px}
+
+  /* HEADER */
+  #header{background:linear-gradient(135deg,#0d0d1a,#111128);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;position:sticky;top:0;z-index:100}
+  .header-label{font-size:10px;letter-spacing:4px;color:var(--teal);font-family:'JetBrains Mono',monospace;margin-bottom:5px}
+  .header-title{font-size:26px;font-weight:800;background:linear-gradient(90deg,#fff 55%,var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header-sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .header-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cluster-label{font-size:12px;color:#888}
+  .cluster-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:#888;cursor:pointer;font-size:13px;font-weight:700;transition:.2s}
+  .cluster-btn.active{border:2px solid var(--teal);background:rgba(78,205,196,.15);color:var(--teal)}
+  .btn-upload{padding:9px 18px;background:rgba(78,205,196,.1);border:1px solid var(--teal);border-radius:10px;color:var(--teal);cursor:pointer;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;transition:.2s}
+  .btn-upload:hover{background:rgba(78,205,196,.2)}
+  .btn-primary{padding:9px 20px;background:linear-gradient(135deg,var(--teal),var(--blue));border:none;border-radius:10px;color:#0a0a12;cursor:pointer;font-size:13px;font-weight:800;font-family:'Syne',sans-serif}
+
+  /* LANDING */
+  #landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:40px;text-align:center}
+  .landing-icon{font-size:72px;margin-bottom:20px;animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .landing-title{font-size:22px;font-weight:700;margin-bottom:10px}
+  .landing-sub{font-size:14px;color:var(--muted);max-width:480px;line-height:1.7;margin-bottom:28px}
+  .col-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:36px}
+  .col-tag{padding:5px 13px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#aaa}
+  .drop-zone{border:2px dashed var(--border);border-radius:18px;padding:36px 56px;cursor:pointer;transition:.3s;margin-bottom:16px}
+  .drop-zone:hover{border-color:var(--teal);background:rgba(78,205,196,.04)}
+  .drop-zone-icon{font-size:36px;margin-bottom:8px}
+  .drop-zone-text{color:var(--muted);font-size:13px}
+  .or-divider{color:#444;font-size:12px;margin:8px 0}
+
+  /* KPIs */
+  #kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;padding:20px 28px 0}
+  .kpi{background:var(--surface);border-radius:14px;padding:18px 20px;transition:.3s;cursor:default}
+  .kpi:hover{transform:translateY(-3px)}
+  .kpi-icon{font-size:24px;margin-bottom:7px}
+  .kpi-value{font-size:20px;font-weight:800}
+  .kpi-label{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* TABS */
+  #tabs{display:flex;gap:2px;padding:20px 28px 0;border-bottom:1px solid var(--border);margin-top:8px}
+  .tab{padding:9px 18px;border-radius:9px 9px 0 0;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'Syne',sans-serif;border-bottom:2px solid transparent;transition:.2s}
+  .tab.active{color:var(--teal);background:var(--surface2);border-bottom:2px solid var(--teal)}
+  .tab:hover{color:#aaa}
+
+  /* CONTENT */
+  #content{padding:24px 28px}
+  .tab-pane{display:none;animation:fadeIn .4s ease}
+  .tab-pane.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* CARDS */
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:18px}
+  .card{background:var(--surface);border-radius:16px;padding:22px;border:1px solid var(--border)}
+  .card-title{font-size:13px;font-weight:700;margin-bottom:18px}
+  .card-full{grid-column:1/-1}
+  canvas{max-height:240px}
+
+  /* STATS TABLE */
+  .stats-table{width:100%;border-collapse:collapse;font-size:13px}
+  .stats-table th{padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0}
+  .stats-table td{padding:9px 14px;border-bottom:1px solid #13131f}
+  .stats-table tr:hover td{background:rgba(78,205,196,.03)}
+  .mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+  .tbl-wrap{overflow:auto;max-height:460px;border-radius:10px}
+
+  /* CLUSTER TAGS */
+  .ctag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
+
+  /* PROB BAR */
+  .prob-bar-wrap{display:flex;align-items:center;gap:8px}
+  .prob-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#FF6B6B,#4ECDC4)}
+
+  /* AI PANEL */
+  .ai-panel{margin-top:18px;background:#0d1a1a;border-radius:16px;padding:24px;border:1px solid #1e3535}
+  .ai-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .ai-title{font-size:14px;font-weight:700;color:var(--teal)}
+  .ai-sub{font-size:11px;color:#555;margin-top:3px}
+  #ai-output{white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;color:#c8c8d8;background:#0a1212;border-radius:10px;padding:18px;min-height:60px}
+  .ai-placeholder{color:#444;font-size:13px;text-align:center;padding:24px 0}
+  .pulse{animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* PREDICTION BADGE */
+  .pred-yes{padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#0d2a1a;color:var(--teal)}
+  .pred-no{padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#2a0d0d;color:var(--red)}
+
+  @media(max-width:600px){
+    #header{padding:14px 16px}
+    #kpis,#content{padding-left:14px;padding-right:14px}
+    #tabs{padding-left:14px;overflow-x:auto}
+    .grid-2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div class="header-label">E-COMMERCE ANALYTICS PLATFORM</div>
+    <div class="header-title">Customer Intelligence Suite</div>
+    <div class="header-sub">K-Means Clustering · Logistic Regression · EDA</div>
+  </div>
+  <div class="header-controls">
+    <span class="cluster-label">Clusters:</span>
+    <button class="cluster-btn" data-k="3">3</button>
+    <button class="cluster-btn active" data-k="4">4</button>
+    <button class="cluster-btn" data-k="5">5</button>
+    <button class="cluster-btn" data-k="6">6</button>
+    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">📁 Upload CSV/JSON</button>
+    <button class="btn-primary" onclick="loadSample()">⚡ Load Sample Data</button>
+    <input type="file" id="fileInput" accept=".csv,.json" style="display:none" onchange="handleFile(event)"/>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-icon">🛒</div>
+  <div class="landing-title">Drop Your Customer Data</div>
+  <div class="landing-sub">Upload a CSV or JSON file with customer demographics, purchase history, and behavior metrics to get instant EDA, clustering & predictions.</div>
+  <div class="col-tags">
+    <span class="col-tag">age</span><span class="col-tag">gender</span><span class="col-tag">location</span>
+    <span class="col-tag">purchase_count</span><span class="col-tag">avg_order_value</span>
+    <span class="col-tag">frequency_days</span><span class="col-tag">cart_abandonment</span>
+    <span class="col-tag">website_visits</span><span class="col-tag">total_spend</span>
+  </div>
+  <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+    <div class="drop-zone-icon">📂</div>
+    <div class="drop-zone-text">Click to upload CSV or JSON</div>
+  </div>
+  <div class="or-divider">— or —</div>
+  <button class="btn-primary" style="margin-top:12px;padding:13px 30px;font-size:15px;border-radius:13px" onclick="loadSample()">⚡ Try with Sample Dataset (50 Customers)</button>
+</div>
+
+<!-- DASHBOARD (hidden until data loaded) -->
+<div id="dashboard" style="display:none">
+  <div id="kpis"></div>
+  <div id="tabs">
+    <button class="tab active" data-tab="0">📊 EDA Overview</button>
+    <button class="tab" data-tab="1">🎯 Customer Segments</button>
+    <button class="tab" data-tab="2">📈 Predictions</button>
+    <button class="tab" data-tab="3">🗂️ Data Table</button>
+  </div>
+  <div id="content">
+    <div class="tab-pane active" id="pane-0"></div>
+    <div class="tab-pane" id="pane-1"></div>
+    <div class="tab-pane" id="pane-2"></div>
+    <div class="tab-pane" id="pane-3"></div>
+  </div>
+</div>
+
+<script>
+const CLUSTER_COLORS = ["#FF6B6B","#4ECDC4","#FFE66D","#A855F7","#06B6D4","#F97316"];
+const CLUSTER_NAMES = ["Premium Loyalists","Bargain Hunters","Occasional Buyers","High-Value Prospects","At-Risk Customers","New Explorers"];
+let STATE = { data:null, clustered:null, predicted:null, stats:null, k:4 };
+let charts = {};
+
+const SAMPLE = [
+  {id:1,age:34,gender:"Female",location:"Mumbai",purchase_count:45,avg_order_value:2800,frequency_days:8,cart_abandonment:0.15,website_visits:120,total_spend:126000},
+  {id:2,age:27,gender:"Male",location:"Delhi",purchase_count:12,avg_order_value:800,frequency_days:30,cart_abandonment:0.65,website_visits:45,total_spend:9600},
+  {id:3,age:45,gender:"Female",location:"Bangalore",purchase_count:67,avg_order_value:4200,frequency_days:5,cart_abandonment:0.08,website_visits:200,total_spend:281400},
+  {id:4,age:22,gender:"Male",location:"Chennai",purchase_count:3,avg_order_value:500,frequency_days:90,cart_abandonment:0.80,website_visits:15,total_spend:1500},
+  {id:5,age:38,gender:"Female",location:"Hyderabad",purchase_count:28,avg_order_value:1500,frequency_days:15,cart_abandonment:0.35,website_visits:80,total_spend:42000},
+  {id:6,age:52,gender:"Male",location:"Pune",purchase_count:89,avg_order_value:6500,frequency_days:4,cart_abandonment:0.05,website_visits:350,total_spend:578500},
+  {id:7,age:29,gender:"Female",location:"Kolkata",purchase_count:7,avg_order_value:650,frequency_days:45,cart_abandonment:0.70,website_visits:30,total_spend:4550},
+  {id:8,age:41,gender:"Male",location:"Mumbai",purchase_count:55,avg_order_value:3100,frequency_days:7,cart_abandonment:0.12,website_visits:160,total_spend:170500},
+  {id:9,age:33,gender:"Female",location:"Delhi",purchase_count:19,avg_order_value:1200,frequency_days:20,cart_abandonment:0.45,website_visits:60,total_spend:22800},
+  {id:10,age:47,gender:"Male",location:"Bangalore",purchase_count:72,avg_order_value:5000,frequency_days:5,cart_abandonment:0.07,website_visits:280,total_spend:360000},
+  {id:11,age:25,gender:"Female",location:"Chennai",purchase_count:4,avg_order_value:400,frequency_days:75,cart_abandonment:0.85,website_visits:20,total_spend:1600},
+  {id:12,age:36,gender:"Male",location:"Hyderabad",purchase_count:31,avg_order_value:1800,frequency_days:12,cart_abandonment:0.28,website_visits:95,total_spend:55800},
+  {id:13,age:58,gender:"Female",location:"Pune",purchase_count:95,avg_order_value:7200,frequency_days:3,cart_abandonment:0.03,website_visits:400,total_spend:684000},
+  {id:14,age:31,gender:"Male",location:"Kolkata",purchase_count:8,avg_order_value:700,frequency_days:40,cart_abandonment:0.60,website_visits:35,total_spend:5600},
+  {id:15,age:43,gender:"Female",location:"Mumbai",purchase_count:48,avg_order_value:2600,frequency_days:9,cart_abandonment:0.18,website_visits:140,total_spend:124800},
+  {id:16,age:26,gender:"Male",location:"Delhi",purchase_count:5,avg_order_value:350,frequency_days:60,cart_abandonment:0.75,website_visits:22,total_spend:1750},
+  {id:17,age:55,gender:"Female",location:"Bangalore",purchase_count:80,avg_order_value:5800,frequency_days:4,cart_abandonment:0.04,website_visits:310,total_spend:464000},
+  {id:18,age:39,gender:"Male",location:"Chennai",purchase_count:22,avg_order_value:1300,frequency_days:18,cart_abandonment:0.40,website_visits:70,total_spend:28600},
+  {id:19,age:30,gender:"Female",location:"Hyderabad",purchase_count:10,avg_order_value:900,frequency_days:35,cart_abandonment:0.55,website_visits:40,total_spend:9000},
+  {id:20,age:48,gender:"Male",location:"Pune",purchase_count:61,avg_order_value:3900,frequency_days:6,cart_abandonment:0.10,website_visits:190,total_spend:237900},
+  {id:21,age:23,gender:"Female",location:"Kolkata",purchase_count:2,avg_order_value:300,frequency_days:100,cart_abandonment:0.90,website_visits:10,total_spend:600},
+  {id:22,age:37,gender:"Male",location:"Mumbai",purchase_count:33,avg_order_value:2000,frequency_days:11,cart_abandonment:0.25,website_visits:100,total_spend:66000},
+  {id:23,age:50,gender:"Female",location:"Delhi",purchase_count:77,avg_order_value:5500,frequency_days:4,cart_abandonment:0.06,website_visits:290,total_spend:423500},
+  {id:24,age:28,gender:"Male",location:"Bangalore",purchase_count:9,avg_order_value:750,frequency_days:38,cart_abandonment:0.68,website_visits:32,total_spend:6750},
+  {id:25,age:42,gender:"Female",location:"Chennai",purchase_count:40,avg_order_value:2200,frequency_days:10,cart_abandonment:0.20,website_visits:115,total_spend:88000},
+  {id:26,age:35,gender:"Male",location:"Hyderabad",purchase_count:25,avg_order_value:1600,frequency_days:16,cart_abandonment:0.38,website_visits:78,total_spend:40000},
+  {id:27,age:60,gender:"Female",location:"Pune",purchase_count:100,avg_order_value:8000,frequency_days:2,cart_abandonment:0.02,website_visits:450,total_spend:800000},
+  {id:28,age:24,gender:"Male",location:"Kolkata",purchase_count:4,avg_order_value:450,frequency_days:70,cart_abandonment:0.78,website_visits:18,total_spend:1800},
+  {id:29,age:46,gender:"Female",location:"Mumbai",purchase_count:58,avg_order_value:3400,frequency_days:7,cart_abandonment:0.11,website_visits:170,total_spend:197200},
+  {id:30,age:32,gender:"Male",location:"Delhi",purchase_count:15,avg_order_value:1000,frequency_days:25,cart_abandonment:0.50,website_visits:55,total_spend:15000},
+  {id:31,age:53,gender:"Female",location:"Bangalore",purchase_count:83,avg_order_value:6000,frequency_days:4,cart_abandonment:0.05,website_visits:320,total_spend:498000},
+  {id:32,age:40,gender:"Male",location:"Chennai",purchase_count:29,avg_order_value:1700,frequency_days:13,cart_abandonment:0.30,website_visits:88,total_spend:49300},
+  {id:33,age:21,gender:"Female",location:"Hyderabad",purchase_count:1,avg_order_value:250,frequency_days:120,cart_abandonment:0.92,website_visits:8,total_spend:250},
+  {id:34,age:44,gender:"Male",location:"Pune",purchase_count:50,avg_order_value:2900,frequency_days:8,cart_abandonment:0.16,website_visits:145,total_spend:145000},
+  {id:35,age:57,gender:"Female",location:"Kolkata",purchase_count:88,avg_order_value:6800,frequency_days:3,cart_abandonment:0.04,website_visits:370,total_spend:598400},
+  {id:36,age:31,gender:"Male",location:"Mumbai",purchase_count:11,avg_order_value:850,frequency_days:32,cart_abandonment:0.62,website_visits:42,total_spend:9350},
+  {id:37,age:49,gender:"Female",location:"Delhi",purchase_count:65,avg_order_value:4400,frequency_days:5,cart_abandonment:0.09,website_visits:210,total_spend:286000},
+  {id:38,age:26,gender:"Male",location:"Bangalore",purchase_count:6,avg_order_value:550,frequency_days:55,cart_abandonment:0.72,website_visits:25,total_spend:3300},
+  {id:39,age:38,gender:"Female",location:"Chennai",purchase_count:35,avg_order_value:2100,frequency_days:11,cart_abandonment:0.22,website_visits:105,total_spend:73500},
+  {id:40,age:54,gender:"Male",location:"Hyderabad",purchase_count:79,avg_order_value:5600,frequency_days:4,cart_abandonment:0.06,website_visits:300,total_spend:442400},
+  {id:41,age:29,gender:"Female",location:"Pune",purchase_count:8,avg_order_value:680,frequency_days:42,cart_abandonment:0.66,website_visits:33,total_spend:5440},
+  {id:42,age:43,gender:"Male",location:"Kolkata",purchase_count:42,avg_order_value:2400,frequency_days:9,cart_abandonment:0.19,website_visits:125,total_spend:100800},
+  {id:43,age:36,gender:"Female",location:"Mumbai",purchase_count:52,avg_order_value:3200,frequency_days:7,cart_abandonment:0.13,website_visits:155,total_spend:166400},
+  {id:44,age:22,gender:"Male",location:"Delhi",purchase_count:2,avg_order_value:280,frequency_days:110,cart_abandonment:0.88,website_visits:12,total_spend:560},
+  {id:45,age:51,gender:"Female",location:"Bangalore",purchase_count:74,avg_order_value:5200,frequency_days:5,cart_abandonment:0.07,website_visits:270,total_spend:384800},
+  {id:46,age:34,gender:"Male",location:"Chennai",purchase_count:20,avg_order_value:1100,frequency_days:22,cart_abandonment:0.48,website_visits:65,total_spend:22000},
+  {id:47,age:27,gender:"Female",location:"Hyderabad",purchase_count:6,avg_order_value:580,frequency_days:50,cart_abandonment:0.74,website_visits:27,total_spend:3480},
+  {id:48,age:59,gender:"Male",location:"Pune",purchase_count:97,avg_order_value:7500,frequency_days:2,cart_abandonment:0.02,website_visits:420,total_spend:727500},
+  {id:49,age:41,gender:"Female",location:"Kolkata",purchase_count:44,avg_order_value:2500,frequency_days:9,cart_abandonment:0.21,website_visits:130,total_spend:110000},
+  {id:50,age:33,gender:"Male",location:"Mumbai",purchase_count:17,avg_order_value:1050,frequency_days:24,cart_abandonment:0.52,website_visits:58,total_spend:17850}
+];
+
+// ── UTILITIES ──────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.trim().split('\n');
+  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));
+  return lines.slice(1).map((line,idx)=>{
+    const vals=line.split(',');
+    const obj={id:idx+1};
+    headers.forEach((h,i)=>{const v=vals[i]?.trim();obj[h]=isNaN(v)||v===''?v:parseFloat(v);});
+    return obj;
+  }).filter(r=>r.purchase_count!==undefined||r.total_spend!==undefined);
+}
+
+function normalize(data,keys){
+  const mins={},maxs={};
+  keys.forEach(k=>{mins[k]=Math.min(...data.map(d=>d[k]||0));maxs[k]=Math.max(...data.map(d=>d[k]||0));});
+  return data.map(d=>{
+    const n={...d};
+    keys.forEach(k=>{n['_n_'+k]=maxs[k]===mins[k]?0:((d[k]||0)-mins[k])/(maxs[k]-mins[k]);});
+    return n;
+  });
+}
+
+function kMeans(data,k){
+  const features=['purchase_count','avg_order_value','frequency_days','cart_abandonment'];
+  const nk=features.map(f=>'_n_'+f);
+  const normed=normalize(data,features);
+  let centroids=normed.slice(0,k).map(d=>nk.map(k=>d[k]));
+  let assignments=new Array(normed.length).fill(0);
+  for(let it=0;it<25;it++){
+    assignments=normed.map(d=>{
+      const v=nk.map(k=>d[k]);
+      let best=0,bd=Infinity;
+      centroids.forEach((c,ci)=>{const dist=v.reduce((s,x,i)=>s+(x-c[i])**2,0);if(dist<bd){bd=dist;best=ci;}});
+      return best;
+    });
+    centroids=Array.from({length:k},(_,ci)=>{
+      const g=normed.filter((_,i)=>assignments[i]===ci);
+      if(!g.length)return centroids[ci];
+      return nk.map(k=>g.reduce((s,d)=>s+d[k],0)/g.length);
+    });
+  }
+  return data.map((d,i)=>({...d,cluster:assignments[i]}));
+}
+
+function logistic(data){
+  return data.map(d=>{
+    const s=(d.purchase_count||0)*0.02+(d.avg_order_value||0)*0.0001+(d.website_visits||0)*0.005-(d.cart_abandonment||0)*2-(d.frequency_days||30)*0.01+0.5;
+    const p=1/(1+Math.exp(-s));
+    return{...d,prob:Math.round(p*100)/100,will_buy:p>0.5};
+  });
+}
+
+function computeStats(data){
+  const keys=['age','purchase_count','avg_order_value','frequency_days','cart_abandonment','website_visits','total_spend'];
+  const out={};
+  keys.forEach(k=>{
+    const vals=data.map(d=>d[k]).filter(v=>v!==undefined&&!isNaN(v));
+    if(!vals.length)return;
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const sorted=[...vals].sort((a,b)=>a-b);
+    out[k]={mean:Math.round(mean*100)/100,min:sorted[0],max:sorted[sorted.length-1],median:sorted[Math.floor(sorted.length/2)]};
+  });
+  return out;
+}
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ── RUN ANALYSIS ───────────────────────────────────────────
+function runAnalysis(raw){
+  const cl=kMeans(raw,STATE.k);
+  const pr=logistic(cl);
+  STATE.data=raw; STATE.clustered=cl; STATE.predicted=pr; STATE.stats=computeStats(raw);
+  document.getElementById('landing').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  renderKPIs();
+  renderEDA();
+  renderSegments();
+  renderPredictions();
+  renderTable();
+}
+
+function loadSample(){runAnalysis(SAMPLE);}
+function handleFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{let p;if(f.name.endsWith('.json'))p=JSON.parse(ev.target.result);else p=parseCSV(ev.target.result);runAnalysis(p);}catch(err){alert('Parse error: '+err.message);}};
+  r.readAsText(f);
+}
+
+// ── KPIS ──────────────────────────────────────────────────
+function renderKPIs(){
+  const {data,predicted,stats,k}=STATE;
+  const kpis=[
+    {icon:'👥',val:data.length,label:'Total Customers',col:'#4ECDC4'},
+    {icon:'💰',val:'₹'+(stats?.avg_order_value?.mean?.toLocaleString()||'N/A'),label:'Avg Order Value',col:'#FFE66D'},
+    {icon:'🛍️',val:stats?.purchase_count?.mean||'N/A',label:'Avg Purchases',col:'#FF6B6B'},
+    {icon:'🛒',val:Math.round((stats?.cart_abandonment?.mean||0)*100)+'%',label:'Avg Cart Abandon',col:'#A855F7'},
+    {icon:'🎯',val:k,label:'Segments Found',col:'#06B6D4'},
+    {icon:'✅',val:predicted.filter(d=>d.will_buy).length,label:'Will Purchase',col:'#4ECDC4'},
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(k=>`
+    <div class="kpi" style="border:1px solid ${k.col}22">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-value" style="color:${k.col}">${k.val}</div>
+      <div class="kpi-label">${k.label}</div>
+    </div>`).join('');
+}
+
+// ── EDA ────────────────────────────────────────────────────
+function renderEDA(){
+  const {data,stats}=STATE;
+  const ageBins={'18-25':0,'26-35':0,'36-45':0,'46-55':0,'56+':0};
+  data.forEach(d=>{const a=d.age||0;if(a<=25)ageBins['18-25']++;else if(a<=35)ageBins['26-35']++;else if(a<=45)ageBins['36-45']++;else if(a<=55)ageBins['46-55']++;else ageBins['56+']++;});
+  const genderMap={};data.forEach(d=>{genderMap[d.gender||'Unknown']=(genderMap[d.gender||'Unknown']||0)+1;});
+  const locMap={};data.forEach(d=>{locMap[d.location||'Unknown']=(locMap[d.location||'Unknown']||0)+1;});
+  const locSorted=Object.entries(locMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  document.getElementById('pane-0').innerHTML=`
+    <div class="grid-2">
+      <div class="card"><div class="card-title" style="color:#FFE66D">📊 Age Distribution</div><canvas id="ch-age"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#FF6B6B">👥 Gender Split</div><canvas id="ch-gender"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#06B6D4">📍 Top Locations</div><canvas id="ch-loc"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#A855F7">💸 Purchase Count vs Avg Order Value</div><canvas id="ch-scatter"></canvas></div>
+      <div class="card card-full">
+        <div class="card-title" style="color:#4ECDC4">📋 Descriptive Statistics</div>
+        <div class="tbl-wrap"><table class="stats-table">
+          <thead><tr><th>Feature</th><th>Mean</th><th>Median</th><th>Min</th><th>Max</th></tr></thead>
+          <tbody>${Object.entries(stats).map(([k,s])=>`<tr><td class="mono" style="color:var(--teal)">${k}</td><td>${s.mean}</td><td>${s.median}</td><td style="color:var(--red)">${s.min}</td><td style="color:var(--teal)">${s.max}</td></tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    ['ch-age','ch-gender','ch-loc','ch-scatter'].forEach(id=>destroyChart(id));
+    charts['ch-age']=new Chart(document.getElementById('ch-age'),{type:'bar',data:{labels:Object.keys(ageBins),datasets:[{data:Object.values(ageBins),backgroundColor:'#FFE66D',borderRadius:6}]},options:opts('Customers')});
+    charts['ch-gender']=new Chart(document.getElementById('ch-gender'),{type:'doughnut',data:{labels:Object.keys(genderMap),datasets:[{data:Object.values(genderMap),backgroundColor:['#FF6B6B','#4ECDC4','#A855F7'],borderWidth:0}]},options:{...opts(),plugins:{legend:{labels:{color:'#888',font:{size:12}}}}}});
+    charts['ch-loc']=new Chart(document.getElementById('ch-loc'),{type:'bar',data:{labels:locSorted.map(l=>l[0]),datasets:[{data:locSorted.map(l=>l[1]),backgroundColor:'#06B6D4',borderRadius:6}]},options:{...opts('Customers'),indexAxis:'y'}});
+    charts['ch-scatter']=new Chart(document.getElementById('ch-scatter'),{type:'scatter',data:{datasets:[{data:data.map(d=>({x:d.purchase_count||0,y:d.avg_order_value||0})),backgroundColor:'rgba(168,85,247,0.7)',pointRadius:5}]},options:{...opts(),scales:{x:{...scaleOpts('Purchase Count')},y:{...scaleOpts('Avg Order Value')}}}});
+  },50);
+}
+
+// ── SEGMENTS ───────────────────────────────────────────────
+function renderSegments(){
+  const {clustered,k}=STATE;
+  const cDist=Array.from({length:k},(_,i)=>({name:CLUSTER_NAMES[i]||'C'+i,count:clustered.filter(d=>d.cluster===i).length,color:CLUSTER_COLORS[i]}));
+  const cStats=Array.from({length:k},(_,i)=>{
+    const g=clustered.filter(d=>d.cluster===i);
+    const avg=key=>g.length?g.reduce((s,d)=>s+(d[key]||0),0)/g.length:0;
+    return{name:(CLUSTER_NAMES[i]||'C'+i).split(' ')[0],purchases:Math.round(avg('purchase_count')),spend:Math.round(avg('avg_order_value')),visits:Math.round(avg('website_visits')),abandon:Math.round(avg('cart_abandonment')*100)};
+  });
+
+  document.getElementById('pane-1').innerHTML=`
+    <div class="grid-2">
+      <div class="card"><div class="card-title" style="color:#4ECDC4">🎯 Cluster Distribution</div><canvas id="ch-cdist"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#FFE66D">📊 Segment Comparison</div><canvas id="ch-cbar"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#06B6D4">🔵 Spend vs Visits by Segment</div><canvas id="ch-cscatter"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#FF6B6B">📋 Segment Summary</div>
+        <div class="tbl-wrap"><table class="stats-table">
+          <thead><tr><th>Segment</th><th>Count</th><th>Avg Purchases</th><th>Avg Spend</th><th>Abandon%</th></tr></thead>
+          <tbody>${cStats.map((c,i)=>`<tr>
+            <td><span class="ctag" style="background:${CLUSTER_COLORS[i]}22;color:${CLUSTER_COLORS[i]}">${CLUSTER_NAMES[i]||'C'+i}</span></td>
+            <td>${cDist[i].count}</td><td>${c.purchases}</td><td>₹${c.spend.toLocaleString()}</td>
+            <td style="color:${c.abandon>50?'var(--red)':'var(--teal)'}">${c.abandon}%</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="ai-panel">
+      <div class="ai-header">
+        <div><div class="ai-title">🤖 AI Marketing Intelligence</div><div class="ai-sub">Powered by Claude · Segment-specific strategies</div></div>
+        <button class="btn-primary" onclick="getAI()" id="ai-btn">✨ Generate AI Insights</button>
+      </div>
+      <div id="ai-output"><div class="ai-placeholder">Click "Generate AI Insights" to get Claude's marketing recommendations for each customer segment.</div></div>
+    </div>`;
+
+  setTimeout(()=>{
+    ['ch-cdist','ch-cbar','ch-cscatter'].forEach(id=>destroyChart(id));
+    charts['ch-cdist']=new Chart(document.getElementById('ch-cdist'),{type:'doughnut',data:{labels:cDist.map(c=>c.name),datasets:[{data:cDist.map(c=>c.count),backgroundColor:cDist.map(c=>c.color),borderWidth:0}]},options:{...opts(),plugins:{legend:{labels:{color:'#888',font:{size:11}}}}}});
+    charts['ch-cbar']=new Chart(document.getElementById('ch-cbar'),{type:'bar',data:{labels:cStats.map(c=>c.name),datasets:[{label:'Avg Purchases',data:cStats.map(c=>c.purchases),backgroundColor:'#4ECDC4',borderRadius:5},{label:'Avg Visits',data:cStats.map(c=>c.visits),backgroundColor:'#A855F7',borderRadius:5},{label:'Abandon%',data:cStats.map(c=>c.abandon),backgroundColor:'#FF6B6B',borderRadius:5}]},options:opts('Value')});
+    const scatterDS=Array.from({length:k},(_,i)=>({label:CLUSTER_NAMES[i]||'C'+i,data:clustered.filter(d=>d.cluster===i).map(d=>({x:d.avg_order_value||0,y:d.website_visits||0})),backgroundColor:CLUSTER_COLORS[i]+'cc',pointRadius:6}));
+    charts['ch-cscatter']=new Chart(document.getElementById('ch-cscatter'),{type:'scatter',data:{datasets:scatterDS},options:{...opts(),scales:{x:{...scaleOpts('Avg Order Value (₹)')},y:{...scaleOpts('Website Visits')}}}});
+  },50);
+}
+
+// ── PREDICTIONS ────────────────────────────────────────────
+function renderPredictions(){
+  const {predicted,k}=STATE;
+  const bins=Array.from({length:10},(_,i)=>({r:`${i*10}-${(i+1)*10}%`,c:predicted.filter(d=>d.prob>=i*0.1&&d.prob<(i+1)*0.1).length}));
+  const segProb=Array.from({length:k},(_,i)=>{const g=predicted.filter(d=>d.cluster===i);return g.length?Math.round(g.reduce((s,d)=>s+d.prob,0)/g.length*100):0;});
+  const top10=[...predicted].sort((a,b)=>b.prob-a.prob).slice(0,10);
+
+  document.getElementById('pane-2').innerHTML=`
+    <div class="grid-2">
+      <div class="card"><div class="card-title" style="color:#4ECDC4">📈 Purchase Probability Distribution</div><canvas id="ch-prob"></canvas></div>
+      <div class="card"><div class="card-title" style="color:#A855F7">🎯 Segment Purchase Likelihood</div><canvas id="ch-segprob"></canvas></div>
+      <div class="card card-full">
+        <div class="card-title" style="color:#FFE66D">⚡ Top 10 Customers by Purchase Probability</div>
+        <div class="tbl-wrap"><table class="stats-table">
+          <thead><tr><th>#</th><th>ID</th><th>Segment</th><th>Prob</th><th>Purchases</th><th>Avg Order</th><th>Abandon</th><th>Prediction</th></tr></thead>
+          <tbody>${top10.map((r,i)=>`<tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td class="mono">#${r.id}</td>
+            <td><span class="ctag" style="background:${CLUSTER_COLORS[r.cluster]}22;color:${CLUSTER_COLORS[r.cluster]}">${CLUSTER_NAMES[r.cluster]||'C'+r.cluster}</span></td>
+            <td><div class="prob-bar-wrap"><div class="prob-bar" style="width:${r.prob*80}px"></div><span style="color:${r.prob>=.5?'var(--teal)':'var(--red)'};font-weight:700">${Math.round(r.prob*100)}%</span></div></td>
+            <td>${r.purchase_count||0}</td>
+            <td>₹${(r.avg_order_value||0).toLocaleString()}</td>
+            <td style="color:${(r.cart_abandonment||0)>.5?'var(--red)':'var(--teal)'}">${Math.round((r.cart_abandonment||0)*100)}%</td>
+            <td><span class="${r.will_buy?'pred-yes':'pred-no'}">${r.will_buy?'✓ Will Buy':'✗ Unlikely'}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    ['ch-prob','ch-segprob'].forEach(id=>destroyChart(id));
+    charts['ch-prob']=new Chart(document.getElementById('ch-prob'),{type:'bar',data:{labels:bins.map(b=>b.r),datasets:[{data:bins.map(b=>b.c),backgroundColor:bins.map((_,i)=>i>=5?'#4ECDC4':'#FF6B6B'),borderRadius:6}]},options:opts('Customers')});
+    charts['ch-segprob']=new Chart(document.getElementById('ch-segprob'),{type:'bar',data:{labels:Array.from({length:k},(_,i)=>(CLUSTER_NAMES[i]||'C'+i).split(' ')[0]),datasets:[{data:segProb,backgroundColor:CLUSTER_COLORS.slice(0,k),borderRadius:6,label:'Avg Probability %'}]},options:opts('%')});
+  },50);
+}
+
+// ── TABLE ─────────────────────────────────────────────────
+function renderTable(){
+  const {predicted}=STATE;
+  document.getElementById('pane-3').innerHTML=`
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div class="card-title" style="color:var(--teal);margin:0">🗂️ Full Customer Dataset</div>
+        <div style="font-size:12px;color:var(--muted)">${predicted.length} rows</div>
+      </div>
+      <div class="tbl-wrap"><table class="stats-table">
+        <thead><tr><th>ID</th><th>Age</th><th>Gender</th><th>Location</th><th>Purchases</th><th>Avg Order</th><th>Freq Days</th><th>Abandon%</th><th>Visits</th><th>Total Spend</th><th>Segment</th><th>Buy Prob</th></tr></thead>
+        <tbody>${predicted.map(r=>`<tr>
+          <td class="mono">#${r.id}</td><td>${r.age||'—'}</td><td>${r.gender||'—'}</td><td>${r.location||'—'}</td>
+          <td>${r.purchase_count||0}</td><td>₹${(r.avg_order_value||0).toLocaleString()}</td>
+          <td>${r.frequency_days||'—'}</td>
+          <td style="color:${(r.cart_abandonment||0)>.5?'var(--red)':'var(--teal)'}">${Math.round((r.cart_abandonment||0)*100)}%</td>
+          <td>${r.website_visits||0}</td><td>₹${(r.total_spend||0).toLocaleString()}</td>
+          <td><span class="ctag" style="background:${CLUSTER_COLORS[r.cluster]}22;color:${CLUSTER_COLORS[r.cluster]}">${CLUSTER_NAMES[r.cluster]||'C'+r.cluster}</span></td>
+          <td style="color:${r.prob>=.5?'var(--teal)':'var(--red)'};font-weight:700">${Math.round(r.prob*100)}%</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+// ── CHART DEFAULTS ─────────────────────────────────────────
+function opts(label=''){return{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#161628',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#aaa'}},scales:{x:{ticks:{color:'#666',font:{size:11}},grid:{color:'#1a1a2a'}},y:{ticks:{color:'#666',font:{size:11}},grid:{color:'#1a1a2a'}}}};}
+function scaleOpts(label){return{ticks:{color:'#666',font:{size:11}},grid:{color:'#1a1a2a'},title:{display:!!label,text:label,color:'#555',font:{size:11}}};}
+
+// ── TABS ──────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+// ── CLUSTER BUTTONS ────────────────────────────────────────
+document.querySelectorAll('.cluster-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cluster-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.k=parseInt(b.dataset.k);
+    if(STATE.data)runAnalysis(STATE.data);
+  });
+});
+
+// ── AI INSIGHTS ────────────────────────────────────────────
+async function getAI(){
+  const btn=document.getElementById('ai-btn');
+  const out=document.getElementById('ai-output');
+  btn.disabled=true;btn.textContent='Analyzing...';btn.classList.add('pulse');
+  out.innerHTML='<span class="pulse" style="color:var(--teal)">Claude is analyzing your segments...</span>';
+  const {clustered,k}=STATE;
+  const summary=Array.from({length:k},(_,i)=>{
+    const g=clustered.filter(d=>d.cluster===i);
+    const avg=key=>g.length?g.reduce((s,d)=>s+(d[key]||0),0)/g.length:0;
+    return `Cluster ${i} (${CLUSTER_NAMES[i]}, n=${g.length}): avg_purchases=${avg('purchase_count').toFixed(1)}, avg_order=₹${avg('avg_order_value').toFixed(0)}, cart_abandon=${avg('cart_abandonment').toFixed(2)}, visits=${avg('website_visits').toFixed(0)}`;
+  }).join('\n');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are a senior e-commerce data scientist. Analyze these customer segments:\n\n${summary}\n\nFor each segment provide: 1) Customer profile, 2) Marketing strategy, 3) LTV rating (Low/Medium/High). Be concise and business-focused with clear headers per segment.`}]})});
+    const d=await res.json();
+    out.textContent=d.content?.[0]?.text||'No response.';
+  }catch(e){out.textContent='Error: '+e.message;}
+  btn.disabled=false;btn.textContent='✨ Regenerate Insights';btn.classList.remove('pulse');
+}
+</script>
+</body>
+</html>
